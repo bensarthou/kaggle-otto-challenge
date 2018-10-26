@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 from otto_challenge import load_db
 
 
-def visualisation(X, y, manifold='pca', n_components=2):
+def visualisation(X, y, manifold='pca', n_components=2,class):
     """
     @brief: visualise features of data manifolded in 2 or 3 dimensions, with PCA or TSNE
 
