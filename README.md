@@ -1,7 +1,7 @@
 # kaggle-otto-challenge
 Challenge Kaggle of Otto Products classification, for course TC1 in master AIC
 
-# XGBoost parameters history
+# XGBoost XGBClassifier() parameters history
 ## kaggle public score 0.53935
 {'colsample_bytree': 0.7,  'learning_rate': 0.1,  'max_depth': 6,  'n_estimators': 100,  'nthread': 3,  'objective': 'binary:logistic',  'reg_alpha': 1,  'seed': 42}
 ## kaggle public score 0.51429
