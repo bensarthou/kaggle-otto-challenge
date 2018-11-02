@@ -39,7 +39,7 @@ pd.to_numeric(train_target)
 ###########################################
 
 train_dmatrix = xgb.DMatrix(data=train_data,label=train_target)
-xg_class = xgb.XGBClassifier(objective='binary:logistic',colsample_bytree=0.3,learning_rate=0.1,max_depth=5,reg_alpha=5,n_estimators=10)
+xg_class = xgb.XGBClassifier(objective='binary:logistic',colsample_bytree=0.3,learning_rate=0.05,max_depth=6,reg_alpha=5,n_estimators=100)
 
 xg_class.fit(train_data,train_target)
 preds = xg_class.predict_proba(test_data)
