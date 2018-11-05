@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split
 
-from otto_challenge import load_db
+from toolbox import load_otto_db
 
 
 def feature_importance(X, y, threshold=0.01):
@@ -35,7 +35,7 @@ def feature_importance(X, y, threshold=0.01):
 
 if __name__ == '__main__':
 
-    X, y = load_db('train.csv')
+    X, y = load_otto_db()
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
 
     forest, indices_best_features = feature_importance(X_train[:1000, :], y_train[:1000])

@@ -6,7 +6,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn.model_selection import train_test_split
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-from otto_challenge import load_db
+
+from toolbox import load_otto_db
 
 
 def visualisation(X, y, manifold='pca', n_components=2,class):
@@ -57,8 +58,10 @@ def visualisation(X, y, manifold='pca', n_components=2,class):
 
 if __name__ == "__main__":
 
-    X, y = load_db('train.csv')
-    X_test = load_db('test.csv', converter=None, test=True)
+    # load datasets
+    X, y = load_otto_db()
+    X_test = load_otto_db(test=True)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42)
 
+    # run visualisation
     visualisation(X_train[:10000], y_train[:10000], manifold='tsne', n_components=2)

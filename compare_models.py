@@ -1,4 +1,7 @@
 import csv
+import numpy as np
+from scipy.optimize import minimize
+
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -6,14 +9,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, log_loss
 
-from scipy.optimize import minimize
-
-from otto_challenge import load_db
+from toolbox import load_otto_db
 from feature_importance import feature_importance
 
-import numpy as np
 
 MODELS = ['DecisionTree.csv', 'LogisticRegression.csv', 'RandomForest.csv', 'MLPClassifier.csv']
+
 
 def compare_model(dir, models):
     """
@@ -110,8 +111,8 @@ if __name__ == '__main__':
 
     print('Comparing gridsearch on differents models')
     compare_model('data/', MODELS)
-    X, y = load_db('train.csv')
-    X, y = X, y
+    X, y = load_otto_db()
+    X_test = load_otto_db(test=True)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
 
     # RAM issue, remove if you have a better computer
