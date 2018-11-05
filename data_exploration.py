@@ -1,4 +1,3 @@
-import csv
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -8,7 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split
 
-from otto_challenge import load_db
+from toolbox import load_otto_db
 
 
 def visualisation(X, y, manifold='pca', n_components=2):
@@ -52,7 +51,6 @@ def visualisation(X, y, manifold='pca', n_components=2):
                        label=str(class_i))
 
     plt.legend()
-    plt.show()
 
     return X_manifold
 
@@ -92,9 +90,8 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
     plt.title("Feature importances")
     plt.bar(range(X.shape[1]), importances[indices],
             color="r", yerr=std[indices], align="center")
-    plt.xticks(range(X.shape[1]), indices, rotation='horizontal')
+    plt.xticks(range(X.shape[1]), indices, rotation='horizontal', size=8)
     plt.xlim([-1, X.shape[1]])
-    plt.show()
 
     indices_best_features = np.arange(len(importances))[importances > threshold]
 
@@ -106,11 +103,14 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
 
 if __name__ == '__main__':
 
-    X, y = load_db('data/train.csv')
+    # load data
+    print('-------------------------------------------------------')
+    print("Loading dataset...")
+    X, y = load_otto_db()
+    # print('WARNING: reducing numbers of samples to relieve RAM')
+    # X, y = X[:10000, :], y[:10000] # You can remove this line if you have a better computer
 
-    print('WARNING: reducing numbers of samples to relieve RAM')
-    X, y = X[:10000, :], y[:10000] # You can remove this line if you have a better computer
-
+    # separate training and validation sets
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
 
 
@@ -121,12 +121,12 @@ if __name__ == '__main__':
     # The idea of this section is to reduce the features used for learning, by selecting only
     ## those who seems to help in the classification (in a attempt to reduce noise)
 
+    print('-------------------------------------------------------')
+    print("Computing Features importance...")
     indices_best_features, forest = feature_importance(X_train,
                                                        y_train,
                                                        return_model=True)
-    print('----------------------------------')
     print('TEST SCORE, ALL FEATURES: ', forest.score(X_valid, y_valid))
-    print('----------------------------------')
 
     # Compare the validation score with a learning only on the "important" features
     forest_feature = ExtraTreesClassifier(n_estimators=250, random_state=0)
@@ -145,4 +145,6 @@ if __name__ == '__main__':
     print('-------------------------------------------------------')
     print('VISUALISATION OF DATA BY PROJECTING IN SMALL DIMENSIONS')
     # You can choose you projection method (PCA or T-SNE) and the number of reduced dimension (2 or 3)
-    visualisation(X_train, y_train, manifold='tsne', n_components=2)
+    visualisation(X_train, y_train, manifold='pca', n_components=3)
+
+    plt.show()
