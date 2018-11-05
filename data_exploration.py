@@ -92,7 +92,7 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
     plt.title("Feature importances")
     plt.bar(range(X.shape[1]), importances[indices],
             color="r", yerr=std[indices], align="center")
-    plt.xticks(range(X.shape[1]), indices, rotation='horizontal')
+    plt.xticks(range(X.shape[1]), indices, rotation='horizontal', size=8)
     plt.xlim([-1, X.shape[1]])
     plt.show()
 
