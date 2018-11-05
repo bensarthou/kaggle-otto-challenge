@@ -1,7 +1,6 @@
 import csv
 import numpy as np
 import warnings
-
 from scipy.optimize import minimize
 
 import xgboost as xgb
@@ -10,7 +9,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, log_loss, mean_squared_error
 
@@ -72,7 +70,7 @@ def model_mix(X_train, y_train, X_val, y_val, models):
     y_proba_pred = []
     for model_name, model in models:
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.filterwarnings("ignore",category=DeprecationWarning)
 
             model.fit(X_train, y_train)
             print('Score on model   => {}: {:.3f}'.format(model_name, model.score(X_val, y_val)))
@@ -148,7 +146,7 @@ if __name__ == '__main__':
 
     models.append(('XGBoost', xgb.XGBClassifier(objective='binary:logistic',
     colsample_bytree=0.8, learning_rate=0.1,
-    max_depth=7, reg_alpha=0, n_estimators=100)))
+    max_depth=7, reg_alpha=0, n_estimators=100, n_jobs=3)))
 
     models.append(('Random Forest', RandomForestClassifier(max_depth=None, criterion='gini',
     n_estimators=100, min_samples_split=5)))

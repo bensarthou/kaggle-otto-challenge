@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
+import warnings
 
 from xgboost import XGBClassifier
 from sklearn.linear_model import LogisticRegression
@@ -25,48 +26,52 @@ if __name__ == "__main__":
 
     # Logistic Regression
     parameters = {'penalty':['l1', 'l2'],
-                  'C':[0.1, 1., 10.]}
+                  'C':[0.1, 1., 10.],
+                  'n_jobs': [N_JOBS]}
     models.append(("LogisticRegression", LogisticRegression(), parameters))
 
     # SVM
     parameters = {'kernel':['linear', 'rbf', 'poly', 'sigmoid'],
                   'C':[0.1, 1., 10., 100],
-                  'probability':True}
+                  'probability':[True]}
     models.append(("SVC", SVC(), parameters))
 
     # KNeighbors
     parameters = {'n_neighbors':[3, 5, 7],
-                  'leaf_size':[10, 20, 30, 40],
-                  'p':[1, 2]}
+                  'p':[1, 2],
+                  'n_jobs': [N_JOBS]}
     models.append(("KNeighbors", KNeighborsClassifier(), parameters))
 
     # DecisionTree
     parameters = {'splitter':['best', 'random'],
                   'criterion':['gini', 'entropy'],
-                  'max_depth':[3, 5, 10, 20],
-                  'min_samples_split':[2, 3, 5]}
+                  'max_depth':[None, 10, 20, 50],
+                  'min_samples_split':[2, 4, 6]}
     models.append(("DecisionTree", DecisionTreeClassifier(), parameters))
 
     # RandomForestClassifier
     parameters = {'n_estimators':[10, 50, 100],
                   'criterion':['gini', 'entropy'],
-                  'max_depth':[None, 3, 10],
-                  'min_samples_split':[2, 3, 5]}
+                  'max_depth':[None, 5, 10],
+                  'min_samples_split':[2, 4],
+                  'n_jobs': [N_JOBS]}
     models.append(("RandomForest", RandomForestClassifier(), parameters))
 
     # GradientBoostingClassifier
     parameters = {'loss':['deviance', 'exponential'],
-                  'n_estimators':[10, 50, 100],
+                  'n_estimators':[50, 100, 200],
                   'criterion':['friedman_mse', 'mae'],
-                  'max_depth':[3, 10],
-                  'min_samples_split':[2, 3, 5]}
+                  'max_depth':[3, 7],
+                  'min_samples_split':[2, 4],
+                  'subsample':[0.7, 1.]}
     models.append(("GradientBoostingClassifier", GradientBoostingClassifier(), parameters))
 
     # Multi-Layer Perceptron Classifier
-    parameters = {'hidden_layer_sizes':[(70,), (40, 40), (20, 20, 20)],
+    parameters = {'hidden_layer_sizes':[(50,), (40, 30), (50, 25, 15)],
                   'activation':['logistic', 'relu'],
                   'batch_size':[128],
-                  'alpha':[0.001, 0.0001]}
+                  'alpha':[0.001, 0.0001],
+                  'early_stopping' = [True]}
     models.append(("MLPClassifier", MLPClassifier(), parameters))
 
     # Extreme Gradient Boosting classifier
@@ -76,7 +81,9 @@ if __name__ == "__main__":
                   'learning_rate':[0.1],
                   'max_depth':[3, 5, 7, 9],
                   'reg_alpha':[0,1],
-                  'n_estimators':[100]}
+                  'reg_lambda':[0,1],
+                  'n_estimators':[100],
+                  'n_jobs': [N_JOBS]}
     models.append(("XGBoost", XGBClassifier(), parameters))
 
     results = []
@@ -86,9 +93,11 @@ if __name__ == "__main__":
         print("Running grid search on model '{}'".format(name))
 
         # run grid search
-        clf = GridSearchCV(model, parameter, scoring='neg_log_loss', cv=N_CROSS_VAL, n_jobs=N_JOBS)
-        clf.fit(X, y)
-        res = clf.cv_results_
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=DeprecationWarning)
+            clf = GridSearchCV(model, parameter, scoring='neg_log_loss', cv=N_CROSS_VAL, n_jobs=N_JOBS)
+            clf.fit(X, y)
+            res = clf.cv_results_
 
         # save results to csv file
         with open('{}}/{}.csv'.format(CSV_DIR, name), 'w') as csvfile:
