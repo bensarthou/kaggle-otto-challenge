@@ -23,7 +23,7 @@ test_df = pd.read_csv(test_csv_path,header=0)
 # split df so that ids are isolated from features
 # on drop la premiere colonne d'id, qui n'est pas un feature, cf. exemple tuto xgboost
 train_data, train_target = train_df.iloc[:,1:-1], train_df.iloc[:,-1]
-# pour TEST pas de classe (test_target) !!!: 
+# pour TEST pas de classe (test_target) !!!:
 # on fait juste une prédiction de probabilité qu'on envoie sur Kaggle
 test_data = test_df.iloc[:,1:]
 
@@ -31,7 +31,7 @@ test_data = test_df.iloc[:,1:]
 nbrRows = train_target.shape[0]
 for rowIndex in range(nbrRows):
     train_target.at[rowIndex] = int(train_target.at[rowIndex][6])
-    
+
 pd.to_numeric(train_target)
 
 ###########################################
@@ -39,7 +39,7 @@ pd.to_numeric(train_target)
 ###########################################
 
 train_dmatrix = xgb.DMatrix(data=train_data,label=train_target)
-xg_class = xgb.XGBClassifier(objective='binary:logistic',colsample_bytree=0.3,learning_rate=0.05,max_depth=6,reg_alpha=5,n_estimators=100)
+xg_class = xgb.XGBClassifier(objective='binary:logistic', colsample_bytree=0.3, learning_rate=0.05, max_depth=6,reg_alpha=5,n_estimators=100)
 
 xg_class.fit(train_data,train_target)
 preds = xg_class.predict_proba(test_data)
