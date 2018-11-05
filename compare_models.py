@@ -1,5 +1,7 @@
 import csv
 import numpy as np
+import warnings
+
 from scipy.optimize import minimize
 
 import xgboost as xgb
@@ -69,9 +71,14 @@ def model_mix(X_train, y_train, X_val, y_val, models):
     # Train all models on the training data, and print the resulting accuracy
     y_proba_pred = []
     for model_name, model in models:
-        model.fit(X_train, y_train)
-        print('Score on model => {}: {:.4f}'.format(model_name, model.score(X_val, y_val)))
-        y_proba_pred.append(model.predict_proba(X_val))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            model.fit(X_train, y_train)
+            print('Score on model   => {}: {:.3f}'.format(model_name, model.score(X_val, y_val)))
+            print('Logloss on model => {}: {:.3f}'.format(model_name, log_loss(y_val, model.predict_proba(X_val))))
+
+            y_proba_pred.append(model.predict_proba(X_val))
 
     # We want to minimize the logloss
     def log_loss_func(weights):
@@ -122,8 +129,8 @@ def model_mix(X_train, y_train, X_val, y_val, models):
 
 if __name__ == '__main__':
 
-    # print('Comparing gridsearch on differents models')
-    # compare_model('data/', MODELS)
+    print('Comparing gridsearch on differents models')
+    compare_model('data/', MODELS)
 
     X, y = load_otto_db()
     X_test = load_otto_db(test=True)
@@ -136,16 +143,20 @@ if __name__ == '__main__':
     indices_best_features = feature_importance(X_train, y_train)
 
     models = []
+
     ## Best models according to gridsearch
+
+    models.append(('XGBoost', xgb.XGBClassifier(objective='binary:logistic',
+    colsample_bytree=0.8, learning_rate=0.1,
+    max_depth=7, reg_alpha=0, n_estimators=100)))
+
     models.append(('Random Forest', RandomForestClassifier(max_depth=None, criterion='gini',
-                                                           n_estimators=100, min_samples_split=5)))
+    n_estimators=100, min_samples_split=5)))
+
     models.append(('MLPClassifier', MLPClassifier(hidden_layer_sizes=(20, 20, 20), batch_size=256,
                                                   alpha=0.0001, activation='relu')))
     models.append(('Random Forest', LogisticRegression(C=10, penalty='l2')))
 
-    models.append(('XGBoost', xgb.XGBClassifier(objective='binary:logistic',
-                                                colsample_bytree=0.8, learning_rate=0.1,
-                                                max_depth=7, reg_alpha=0, n_estimators=100)))
 
     print('MODEL MIX, ALL FEATURES')
     model_mix(X_train, y_train, X_val, y_val, models)
