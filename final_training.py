@@ -3,7 +3,9 @@ import numpy as np
 import warnings
 from scipy.optimize import minimize
 
+import pandas as pd
 import xgboost as xgb
+
 from sklearn import preprocessing
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
@@ -58,11 +60,14 @@ def model_mix(X_train, y_train, X_val, y_val, models):
             X_val: ndarray (n_samples, n_features), array of samples to test
             y_val: ndarray (n_samples,), array of targets for each test sample
 
-            models: list of sklearn models (with params already passed)
+            models: list of sklearn models (with params already passed) as a
+                    list of tuple (name, model)
 
     @return:
-            print confusion matrix and log loss score for the final model (weighted prediction)
-
+            (print confusion matrix and log loss score for the final model (weighted prediction))
+            models: list of learned sklearn models as a list of tuple (name, model)
+            optimal_weights: weights for ponderation between model prediction,
+                             optimized for those models
      """
     n_classes = len(np.unique(y_train))
 
@@ -70,11 +75,13 @@ def model_mix(X_train, y_train, X_val, y_val, models):
     y_proba_pred = []
     for model_name, model in models:
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore",category=DeprecationWarning)
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
 
             model.fit(X_train, y_train)
             print('Score on model   => {}: {:.3f}'.format(model_name, model.score(X_val, y_val)))
-            print('Logloss on model => {}: {:.3f}'.format(model_name, log_loss(y_val, model.predict_proba(X_val))))
+            print('Logloss on model => {}: {:.3f}'.format(model_name,
+                                                          log_loss(y_val,
+                                                                   model.predict_proba(X_val))))
 
             y_proba_pred.append(model.predict_proba(X_val))
 
@@ -122,7 +129,28 @@ def model_mix(X_train, y_train, X_val, y_val, models):
                                                                                           y_pred)))
     print("{}".format(confusion_matrix(y_val, y_pred)))
 
+    return models, optimal_weights
 
+
+def model_mix_predict(X, models, optimal_weights, n_classes):
+    """
+    @brief: take a list of sklearn models, weights and a dataset and return the weighted prediction
+            over the samples
+
+    @param:
+            X: ndarray, (n_samples, n_features), dataset to predict
+            models: list of tuple (name, model), with model a sklearn model already trained
+            optimal_weights: list of float, weight for each model (sum(weight)==1)
+
+    @return:
+            y_pred: ndarray, (n_samples, n_classes), probability for each class for each sample
+    """
+    y_pred = np.zeros((X.shape[0], n_classes))
+
+    for i_model, model in enumerate(models):
+        y_pred += optimal_weights[i_model] * model[1].predict_proba(X)
+
+    return y_pred
 
 
 if __name__ == '__main__':
@@ -131,12 +159,14 @@ if __name__ == '__main__':
     compare_model('data/', MODELS)
 
     X, y = load_otto_db()
+    n_classes = len(np.unique(y))
+
     X_test = load_otto_db(test=True)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
 
     # RAM issue, remove if you have a better computer
-    # X_train, X_val = X_train[:10000, :], X_val[:2000, :]
-    # y_train, y_val = y_train[:10000], y_val[:2000]
+    X_train, X_val = X_train[:10000, :], X_val[:2000, :]
+    y_train, y_val = y_train[:10000], y_val[:2000]
 
     indices_best_features = feature_importance(X_train, y_train)
 
@@ -145,11 +175,12 @@ if __name__ == '__main__':
     ## Best models according to gridsearch
 
     models.append(('XGBoost', xgb.XGBClassifier(objective='binary:logistic',
-    colsample_bytree=0.8, learning_rate=0.1,
-    max_depth=7, reg_alpha=0, n_estimators=100, n_jobs=3)))
+                                                colsample_bytree=0.8, learning_rate=0.1,
+                                                max_depth=7, reg_alpha=0, n_estimators=100,
+                                                n_jobs=3)))
 
     models.append(('Random Forest', RandomForestClassifier(max_depth=None, criterion='gini',
-    n_estimators=100, min_samples_split=5)))
+                                                           n_estimators=100, min_samples_split=5)))
 
     models.append(('MLPClassifier', MLPClassifier(hidden_layer_sizes=(20, 20, 20), batch_size=256,
                                                   alpha=0.0001, activation='relu')))
@@ -157,8 +188,24 @@ if __name__ == '__main__':
 
 
     print('MODEL MIX, ALL FEATURES')
-    model_mix(X_train, y_train, X_val, y_val, models)
+    trained_models, optimal_weights = model_mix(X_train, y_train, X_val, y_val, models)
 
     # print('MODEL MIX, BEST FEATURES')
     # model_mix(X_train[:, indices_best_features], y_train,
     #           X_val[:, indices_best_features], y_val, models)
+
+
+    y_test_pred = model_mix_predict(X_test, models, optimal_weights, n_classes)
+
+    #####################################################
+    # CREATING .CSV RESPECTING KAGGLE SUBMISSION FORMAT #
+    #####################################################
+
+    preds = pd.DataFrame(y_test_pred)
+    namesRow = ["Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6",
+                "Class_7", "Class_8", "Class_9"]
+    preds.columns = namesRow
+    preds.head()
+
+    preds.index += 1
+    preds.to_csv("results_model_mix.csv", encoding='utf-8', index=True, index_label="id")
