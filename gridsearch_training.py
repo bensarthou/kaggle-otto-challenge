@@ -79,7 +79,7 @@ if __name__ == "__main__":
                   'subsample':[0.7, 1],
                   'colsample_bytree':[0.7, 1],
                   'learning_rate':[0.1],
-                  'max_depth':[3, 5, 7, 9],
+                  'max_depth':[5, 7, 9],
                   'reg_alpha':[0,1],
                   'reg_lambda':[0,1],
                   'n_estimators':[100],
@@ -89,25 +89,23 @@ if __name__ == "__main__":
     results = []
     names = []
     for name, model, parameter in models:
-        print("==================================================")
-        print("Running grid search on model '{}'".format(name))
+        print("\n==================================================")
+        print("{:^50}".format(name))
+        print("==================================================\n")
 
         # run grid search
         with warnings.catch_warnings():
+            warnings.filterwarnings("ignore",category=FutureWarning)
             warnings.filterwarnings("ignore",category=DeprecationWarning)
-            clf = GridSearchCV(model, parameter, scoring='neg_log_loss', cv=N_CROSS_VAL, n_jobs=N_JOBS)
+            clf = GridSearchCV(model, parameter, scoring='neg_log_loss', cv=N_CROSS_VAL, n_jobs=N_JOBS, verbose=2)
             clf.fit(X, y)
             res = clf.cv_results_
 
         # save results to csv file
-        with open('{}}/{}.csv'.format(CSV_DIR, name), 'w') as csvfile:
+        with open('{}/{}.csv'.format(CSV_DIR, name), 'w') as csvfile:
             writer = csv.writer(csvfile, delimiter=';')
             for nb_set_params in range(len(res['params'])):
                 res_str = '{} {} {}'.format(res['params'][nb_set_params],
                                             res['mean_test_score'][nb_set_params],
                                             res['std_test_score'][nb_set_params])
                 writer.writerow([res_str])
-        print("==================================================")
-
-    # for (i, name) in enumerate(names):
-    #     print(name, results[i].keys())
