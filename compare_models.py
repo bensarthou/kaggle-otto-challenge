@@ -57,6 +57,10 @@ def model_mix(X_train, y_train, X_val, y_val, models):
             y_val: ndarray (n_samples,), array of targets for each test sample
 
             models: list of sklearn models (with params already passed)
+
+    @return:
+            print confusion matrix and log loss score for the final model (weighted prediction)
+
      """
     n_classes = len(np.unique(y_train))
 
