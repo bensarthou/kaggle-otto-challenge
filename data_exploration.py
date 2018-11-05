@@ -113,6 +113,16 @@ if __name__ == '__main__':
     # separate training and validation sets
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
 
+    ###############################################
+    ####### Correlation between features ##########
+    ###############################################
+
+    ## Look for correlation between the features to see if there is redondancy in the data or not
+
+    corr_matrix = np.corrcoef(X, rowvar=False)
+    plt.matshow(corr_matrix, cmap='seismic')
+    plt.colorbar()
+    plt.title('Correlation matrix of features in the dataset')
 
     #####################################
     ####### Feature importance ##########
