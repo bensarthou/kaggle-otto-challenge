@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -8,46 +9,17 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
-
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.manifold import TSNE
 
-
-def load_db(path, converter={94: lambda s: int(str(s)[8])}, test=False):
-    """ @brief: Load a csv database from Kaggle, remove its header
-            and return observations and target
-        @param:
-            path: string, path to the csv file to load
-            converter: dictionary, to get the class from string form to int
-                        (or modify any column input)
-        @return:
-            obs: ndarray, of size (n_samples, 93), dtype = int
-            target: ndarray, of size (n_samples, ), dtype = int
-    """
-
-    f = open(path)
-    f.readline()  # skip the header
-
-    data = np.loadtxt(f, delimiter=',', converters=converter)
-
-    #Removing id product and getting label:
-    if not test:
-        n_col = data.shape[1]
-        obs = data[:, 1:n_col-1].astype(int)
-        target = data[:, n_col-1].astype(int)
-        return obs, target
-    else:
-        obs = data[:, 1:].astype(int)
-        return obs
-
-
+from toolbox import load_otto_db
 
 
 if __name__ == "__main__":
 
-    X, y = load_db('train.csv')
-    X_test = load_db('test.csv', converter=None, test=True)
+    X, y = load_otto_db()
+    X_test = load_otto_db(test=True)
     # X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42)
 
     print('Training TSNE...')
