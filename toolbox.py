@@ -14,7 +14,9 @@ def load_otto_db(test=False):
             target: ndarray, of size (n_samples, ), dtype = int
     """
     if not test:
-        data = np.genfromtxt(TRAIN_CSV_PATH, delimiter=',',  skip_header=1, converters={94: lambda s: float(str(s)[8])})  # convert class name from string to int
+        data = np.genfromtxt(TRAIN_CSV_PATH, delimiter=',',  skip_header=1,
+                            converters={94: lambda s: float(str(s)[8])})
+                            # convert class name from string to int
         obs = data[:, 1:-1].astype(int)
         target = data[:, -1].astype(int)
         return obs, target

@@ -8,7 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split
 
-from otto_challenge import load_db
+from toolbox import load_otto_db as load_db
 
 
 def visualisation(X, y, manifold='pca', n_components=2):
@@ -106,13 +106,24 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
 
 if __name__ == '__main__':
 
-    X, y = load_db('data/train.csv')
+    X, y = load_db()
 
     print('WARNING: reducing numbers of samples to relieve RAM')
     X, y = X[:10000, :], y[:10000] # You can remove this line if you have a better computer
 
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
 
+    ###############################################
+    ####### Correlation between features ##########
+    ###############################################
+
+    ## Look for correlation between the features to see if there is redondancy in the data or not
+
+    corr_matrix = np.corrcoef(X, rowvar=False)
+    plt.matshow(corr_matrix, cmap='seismic')
+    plt.colorbar()
+    plt.title('Correlation matrix of features in the dataset')
+    plt.show()
 
     #####################################
     ####### Feature importance ##########
@@ -145,4 +156,4 @@ if __name__ == '__main__':
     print('-------------------------------------------------------')
     print('VISUALISATION OF DATA BY PROJECTING IN SMALL DIMENSIONS')
     # You can choose you projection method (PCA or T-SNE) and the number of reduced dimension (2 or 3)
-    visualisation(X_train, y_train, manifold='tsne', n_components=2)
+    visualisation(X_train, y_train, manifold='pca', n_components=3)
