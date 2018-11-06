@@ -4,8 +4,7 @@ import warnings
 from scipy.optimize import minimize
 
 import pandas as pd
-import xgboost as xgb
-
+from xgboost import XGBClassifier
 from sklearn import preprocessing
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
@@ -17,7 +16,14 @@ from sklearn.metrics import confusion_matrix, accuracy_score, log_loss, mean_squ
 from toolbox import load_otto_db
 from data_exploration import feature_importance
 
-MODELS = ['DecisionTree', 'LogisticRegression', 'RandomForest', 'MLPClassifier']
+
+COMPARE_MODELS = True
+MODELS = ['DecisionTree', 'LogisticRegression', 'RandomForest', 'MLPClassifier', 'XGBoost']
+GRIDSEARCH_DIR = 'gridsearch_results'
+
+N_JOBS = -1
+LIMITED_RAM = False
+OUTPUT_DIR = 'data'
 
 
 def compare_model(dir, models):
@@ -30,9 +36,9 @@ def compare_model(dir, models):
 
     for model in models:
         model_name = model.split('.')[0]
-        best_params, best_mean_logloss, best_std_logloss = 0, -10000, 0
+        best_params, best_mean_logloss, best_std_logloss = {}, -10000, 1
 
-        with open(dir + model + '.csv') as csvfile:
+        with open('{}/{}.csv'.format(dir, model)) as csvfile:
             reader = csv.reader(csvfile, delimiter=' ')
 
             for row in reader:
@@ -40,7 +46,7 @@ def compare_model(dir, models):
                 mean_logloss = float(row[-2])
                 std_logloss = float(row[-1])
 
-                if mean_logloss > best_mean_logloss - best_std_logloss:
+                if mean_logloss + std_logloss > best_mean_logloss + best_std_logloss:
                     best_mean_logloss = mean_logloss
                     best_std_logloss = std_logloss
                     best_params = params
@@ -49,6 +55,7 @@ def compare_model(dir, models):
                                                                             best_mean_logloss,
                                                                             best_std_logloss,
                                                                             best_params))
+
 
 def model_mix(X_train, y_train, X_val, y_val, models):
     """
@@ -71,19 +78,24 @@ def model_mix(X_train, y_train, X_val, y_val, models):
      """
     n_classes = len(np.unique(y_train))
 
+    # --------------------------------
+    #  Train each model independently
+    # --------------------------------
+
     # Train all models on the training data, and print the resulting accuracy
     y_proba_pred = []
     for model_name, model in models:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
-
+            print('Training model {}'.format(model_name))
             model.fit(X_train, y_train)
-            print('Score on model   => {}: {:.3f}'.format(model_name, model.score(X_val, y_val)))
-            print('Logloss on model => {}: {:.3f}'.format(model_name,
-                                                          log_loss(y_val,
-                                                                   model.predict_proba(X_val))))
-
+            print(' * Score on model   : {:.3f}'.format(model.score(X_val, y_val)))
+            print(' * Logloss on model : {:.3f}'.format(log_loss(y_val, model.predict_proba(X_val))))
             y_proba_pred.append(model.predict_proba(X_val))
+
+    # --------------------------------
+    #  Find ensemble learning weights
+    # --------------------------------
 
     # We want to minimize the logloss
     def log_loss_func(weights):
@@ -93,41 +105,28 @@ def model_mix(X_train, y_train, X_val, y_val, models):
             final_prediction += weight * prediction
         return log_loss(y_val, final_prediction)
 
-    ## Optimisation to find best weights between models
-
     # Uniform initialisation
     init_weights = np.ones((len(y_proba_pred),)) / len(y_proba_pred)
     # init_weights = np.array([0.5, 0.4, 0.1])
-
     # We want to have the weight at 1
     constraint = ({'type': 'eq', 'fun': lambda w: 1 - sum(w)})
     bounds = [(0, 1)] * len(y_proba_pred)
-
     # Compute best weights (method chosen with the advive of Kaggle kernel)
-
     res = minimize(log_loss_func, init_weights, method='SLSQP', bounds=bounds,
                    constraints=constraint)
-
     optimal_weights = res['x']
+
     # print results
-    print("   > Best Weights           : {}".format(optimal_weights))
-    print("   > Initial ensemble Score : {}".format(log_loss_func(init_weights)))
-    print("   > Final ensemble Score   : {}".format(res['fun']))
+    print("Ensamble learning results :")
+    print(" * Best Weights           : {}".format(optimal_weights))
+    print(" * Initial ensemble Score : {}".format(log_loss_func(init_weights)))
+    print(" * Final ensemble Score   : {}".format(res['fun']))
 
-    # --------------------------------
-    #  Find ensemble learning weights
-    # --------------------------------
+    y_val_pred_p = model_mix_predict(X_val, models, optimal_weights, n_classes)
+    y_val_pred = np.argmax(y_val_pred_p, axis=1) + 1
 
-    y_pred_p = np.zeros((len(y_val), n_classes))
-
-    for i_clf, clf in enumerate(models):
-        y_pred_p += optimal_weights[i_clf] * clf[1].predict_proba(X_val)
-
-    y_pred = np.argmax(y_pred_p, axis=1) + 1
-
-    print(" * Accuracy on test set with ensemble learning : {:.4f}".format(accuracy_score(y_val,
-                                                                                          y_pred)))
-    print("{}".format(confusion_matrix(y_val, y_pred)))
+    print(" * Accuracy on validation set with ensemble learning : {:.4f}".format(accuracy_score(y_val, y_val_pred)))
+    print("{}".format(confusion_matrix(y_val, y_val_pred)))
 
     return models, optimal_weights
 
@@ -143,69 +142,107 @@ def model_mix_predict(X, models, optimal_weights, n_classes):
             optimal_weights: list of float, weight for each model (sum(weight)==1)
 
     @return:
-            y_pred: ndarray, (n_samples, n_classes), probability for each class for each sample
+            y_pred_p: ndarray, (n_samples, n_classes), probability for each class for each sample
     """
-    y_pred = np.zeros((X.shape[0], n_classes))
-
+    y_pred_p = np.zeros((X.shape[0], n_classes))
     for i_model, model in enumerate(models):
-        y_pred += optimal_weights[i_model] * model[1].predict_proba(X)
-
-    return y_pred
+        y_pred_p += optimal_weights[i_model] * model[1].predict_proba(X)
+    return y_pred_p
 
 
 if __name__ == '__main__':
 
-    print('Comparing gridsearch on differents models')
-    compare_model('data/', MODELS)
+    if COMPARE_MODELS:
+        print("\n==================================================")
+        print("{:^50}".format("COMPARING GRIDSEARCH ON DIFFERENTS MODELS"))
+        print("==================================================")
+        compare_model(GRIDSEARCH_DIR, MODELS)
 
+
+    print("\n==================================================")
+    print("{:^50}".format("LOADING DATASET"))
+    print("==================================================")
+
+    print("Parsing csv files...")
     X, y = load_otto_db()
-    n_classes = len(np.unique(y))
-
     X_test = load_otto_db(test=True)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
+    n_classes = len(np.unique(y))
 
     # RAM issue, remove if you have a better computer
-    X_train, X_val = X_train[:10000, :], X_val[:2000, :]
-    y_train, y_val = y_train[:10000], y_val[:2000]
+    if LIMITED_RAM:
+        print('WARNING : selecting partial dataset for RAM saving')
+        X_train, X_val = X_train[:10000, :], X_val[:2000, :]
+        y_train, y_val = y_train[:10000], y_val[:2000]
 
+    print("Dimensions of datasets :")
+    print(" * Training set   : {}".format(X_train.shape))
+    print(" * Validation set : {}".format(X_val.shape))
+    print(" * Test set       : {}".format(X_test.shape))
+
+
+    print("\n==================================================")
+    print("{:^50}".format("FEATURES IMPORTANCE"))
+    print("==================================================")
     indices_best_features = feature_importance(X_train, y_train)
+    print(indices_best_features)
 
+
+    print("\n==================================================")
+    print("{:^50}".format("TRAINING MODELS"))
+    print("==================================================")
     models = []
 
     ## Best models according to gridsearch
+    parameters = {'objective': 'binary:logistic',
+                  'n_estimators': 150,
+                  'max_depth': 9,
+                  'learning_rate': 0.1,
+                  'subsample': 0.7,
+                  'colsample_bytree': 0.8,
+                  'reg_lambda': 0,models
+                  'reg_alpha': 1,
+                  'n_jobs': N_JOBS}
+    models.append(('XGBoost', XGBClassifier(**parameters)))
 
-    models.append(('XGBoost', xgb.XGBClassifier(objective='binary:logistic',
-                                                colsample_bytree=0.8, learning_rate=0.1,
-                                                max_depth=7, reg_alpha=0, n_estimators=100,
-                                                n_jobs=3)))
+    parameters = {'criterion': 'gini',
+                  'n_estimators': 150,
+                  'max_depth': None,
+                  'min_samples_split': 4,
+                  'n_jobs': N_JOBS}
+    models.append(('Random Forest', RandomForestClassifier(**parameters)))
 
-    models.append(('Random Forest', RandomForestClassifier(max_depth=None, criterion='gini',
-                                                           n_estimators=100, min_samples_split=5)))
+    parameters = {'hidden_layer_sizes': (90,),
+                  'activation': 'logistic',
+                  'alpha': 0.001,
+                  'early_stopping': True,
+                  'batch_size': 128}
+    models.append(('MLP Classifier', MLPClassifier(**parameters)))
 
-    models.append(('MLPClassifier', MLPClassifier(hidden_layer_sizes=(20, 20, 20), batch_size=256,
-                                                  alpha=0.0001, activation='relu')))
-    models.append(('Random Forest', LogisticRegression(C=10, penalty='l2')))
+    parameters = {'C': 10.0,
+                  'penalty': 'l2'}
+    models.append(('Logistic Regression', LogisticRegression(**parameters)))
 
 
-    print('MODEL MIX, ALL FEATURES')
+    print('\nMODEL MIX, ALL FEATURES\n')
     trained_models, optimal_weights = model_mix(X_train, y_train, X_val, y_val, models)
 
-    # print('MODEL MIX, BEST FEATURES')
-    # model_mix(X_train[:, indices_best_features], y_train,
-    #           X_val[:, indices_best_features], y_val, models)
+    print('\nMODEL MIX, BEST FEATURES\n')
+    model_mix(X_train[:, indices_best_features], y_train,
+              X_val[:, indices_best_features], y_val, models)
 
+    print("\n==================================================")
+    print("{:^50}".format("FINAL PREDICTIONS"))
+    print("==================================================")
 
-    y_test_pred = model_mix_predict(X_test, models, optimal_weights, n_classes)
+    print("Running final predictions on test set...")
+    y_test_pred = model_mix_predict(X_test, trained_models, optimal_weights, n_classes)
 
-    #####################################################
-    # CREATING .CSV RESPECTING KAGGLE SUBMISSION FORMAT #
-    #####################################################
-
+    print("Saving predictions to .csv file respecting kaggle submission format...")
     preds = pd.DataFrame(y_test_pred)
     namesRow = ["Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6",
                 "Class_7", "Class_8", "Class_9"]
     preds.columns = namesRow
     preds.head()
-
     preds.index += 1
-    preds.to_csv("results_model_mix.csv", encoding='utf-8', index=True, index_label="id")
+    preds.to_csv(OUTPUT_DIR + "/results_model_mix.csv", encoding='utf-8', index=True, index_label="id")
