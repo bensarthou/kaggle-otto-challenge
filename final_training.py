@@ -4,14 +4,15 @@ import warnings
 from scipy.optimize import minimize
 
 import pandas as pd
-from xgboost import XGBClassifier
 from sklearn import preprocessing
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, log_loss, mean_squared_error
+from xgboost import XGBClassifier
 
 from toolbox import load_otto_db
 from data_exploration import feature_importance
@@ -84,10 +85,13 @@ def model_mix(X_train, y_train, X_val, y_val, models):
 
     # Train all models on the training data, and print the resulting accuracy
     y_proba_pred = []
-    for model_name, model in models:
+    for i_model, model in enumerate(models):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
+            model_name = models[i_model][0]
             print('Training model {}'.format(model_name))
+            models[i_model] = (model_name, CalibratedClassifierCV(models[i_model][1], method='isotonic', cv=3))
+            model = models[i_model][1]
             model.fit(X_train, y_train)
             print(' * Score on model   : {:.3f}'.format(model.score(X_val, y_val)))
             print(' * Logloss on model : {:.3f}'.format(log_loss(y_val, model.predict_proba(X_val))))
@@ -181,11 +185,11 @@ if __name__ == '__main__':
     print(" * Test set       : {}".format(X_test.shape))
 
 
-    print("\n==================================================")
-    print("{:^50}".format("FEATURES IMPORTANCE"))
-    print("==================================================")
-    indices_best_features = feature_importance(X_train, y_train)
-    print(indices_best_features)
+    # print("\n==================================================")
+    # print("{:^50}".format("FEATURES IMPORTANCE"))
+    # print("==================================================")
+    # indices_best_features = feature_importance(X_train, y_train)
+    # print(indices_best_features)
 
 
     print("\n==================================================")
@@ -200,24 +204,49 @@ if __name__ == '__main__':
                   'learning_rate': 0.1,
                   'subsample': 0.7,
                   'colsample_bytree': 0.8,
-                  'reg_lambda': 0,models
+                  'reg_lambda': 0,
                   'reg_alpha': 1,
                   'n_jobs': N_JOBS}
-    models.append(('XGBoost', XGBClassifier(**parameters)))
+    models.append(('XGBoost 1', XGBClassifier(**parameters)))
+
+    parameters = {'objective': 'binary:logistic',
+                  'n_estimators': 150,
+                  'max_depth': 9,
+                  'learning_rate': 0.1,
+                  'subsample': 0.7,
+                  'colsample_bytree': 0.8,
+                  'reg_lambda': 1,
+                  'reg_alpha': 0,
+                  'n_jobs': N_JOBS}
+    models.append(('XGBoost 2', XGBClassifier(**parameters)))
 
     parameters = {'criterion': 'gini',
                   'n_estimators': 150,
                   'max_depth': None,
                   'min_samples_split': 4,
                   'n_jobs': N_JOBS}
-    models.append(('Random Forest', RandomForestClassifier(**parameters)))
+    models.append(('Random Forest 1', RandomForestClassifier(**parameters)))
+
+    parameters = {'criterion': 'gini',
+                  'n_estimators': 200,
+                  'max_depth': None,
+                  'min_samples_split': 4,
+                  'n_jobs': N_JOBS}
+    models.append(('Random Forest 2', RandomForestClassifier(**parameters)))
 
     parameters = {'hidden_layer_sizes': (90,),
                   'activation': 'logistic',
                   'alpha': 0.001,
                   'early_stopping': True,
                   'batch_size': 128}
-    models.append(('MLP Classifier', MLPClassifier(**parameters)))
+    models.append(('MLP Classifier 1', MLPClassifier(**parameters)))
+
+    parameters = {'hidden_layer_sizes': (120,),
+                  'activation': 'logistic',
+                  'alpha': 0.001,
+                  'early_stopping': True,
+                  'batch_size': 128}
+    models.append(('MLP Classifier 2', MLPClassifier(**parameters)))
 
     parameters = {'C': 10.0,
                   'penalty': 'l2'}
@@ -227,9 +256,9 @@ if __name__ == '__main__':
     print('\nMODEL MIX, ALL FEATURES\n')
     trained_models, optimal_weights = model_mix(X_train, y_train, X_val, y_val, models)
 
-    print('\nMODEL MIX, BEST FEATURES\n')
-    model_mix(X_train[:, indices_best_features], y_train,
-              X_val[:, indices_best_features], y_val, models)
+    # print('\nMODEL MIX, BEST FEATURES\n')
+    # model_mix(X_train[:, indices_best_features], y_train,
+    #           X_val[:, indices_best_features], y_val, models)
 
     print("\n==================================================")
     print("{:^50}".format("FINAL PREDICTIONS"))
