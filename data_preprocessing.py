@@ -6,12 +6,13 @@ import warnings
 
 from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import RFE
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier, BaggingClassifier
 
 from toolbox import load_otto_db
 
@@ -100,7 +101,7 @@ if __name__ == "__main__":
 
 
     ############################################################################
-    if True:
+    if False:
 
         print("\n==================================================")
         print("{:^50}".format("FEATURES SELECTION BY RFE"))
@@ -147,7 +148,7 @@ if __name__ == "__main__":
 
 
     ############################################################################
-    if False:
+    if True:
 
         print("\n==================================================")
         print("{:^50}".format("PREDICTIONS CALIBRATION"))
@@ -155,8 +156,7 @@ if __name__ == "__main__":
 
         # No calibration
         clf = BaseClf(**parameters)
-        bag_clf = BaggingClassifier(clf, n_estimators=3)
-        fit_model_and_print_results(bag_clf, X_train, y_train, X_test, y_test, 'WITHOUT calibration')
+        fit_model_and_print_results(clf, X_train, y_train, X_test, y_test, 'WITHOUT calibration')
 
         # With Calibration
         clf = BaseClf(**parameters)
