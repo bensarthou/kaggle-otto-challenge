@@ -1,0 +1,36 @@
+{'hidden_layer_sizes': (90,), 'alpha': 0.001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5205348131258422 0.007056967847152986
+{'hidden_layer_sizes': (50,), 'alpha': 0.001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5357416171613643 0.005975529884109897
+{'hidden_layer_sizes': (40, 30), 'alpha': 0.001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5445877475014179 0.006220815321923554
+{'hidden_layer_sizes': (50, 25, 15), 'alpha': 0.001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5576579436767637 0.004053563055357558
+{'hidden_layer_sizes': (70, 50, 25, 15), 'alpha': 0.001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.573910104293579 0.013917158342136176
+{'hidden_layer_sizes': (90,), 'alpha': 0.0001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5237772263086166 0.00901848328030064
+{'hidden_layer_sizes': (50,), 'alpha': 0.0001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5377295587326434 0.005588262077760159
+{'hidden_layer_sizes': (40, 30), 'alpha': 0.0001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5458374959197873 0.005212574181610007
+{'hidden_layer_sizes': (50, 25, 15), 'alpha': 0.0001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5588352568644771 0.008028859481246717
+{'hidden_layer_sizes': (70, 50, 25, 15), 'alpha': 0.0001, 'activation': 'logistic', 'early_stopping': True, 'batch_size': 128} -0.5734320133465475 0.014150889815066368
+{'hidden_layer_sizes': (90,), 'alpha': 0.001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5528048573373796 0.009437357070880807
+{'hidden_layer_sizes': (50,), 'alpha': 0.001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5624608263593436 0.008138283051531551
+{'hidden_layer_sizes': (40, 30), 'alpha': 0.001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5642147276404526 0.005726244728236112
+{'hidden_layer_sizes': (50, 25, 15), 'alpha': 0.001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5556393387355417 0.01212279679994224
+{'hidden_layer_sizes': (70, 50, 25, 15), 'alpha': 0.001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5743433037491512 0.01627088003285364
+{'hidden_layer_sizes': (90,), 'alpha': 0.0001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5546662524500505 0.0028525906914285276
+{'hidden_layer_sizes': (50,), 'alpha': 0.0001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5625776581344903 0.006267286143665256
+{'hidden_layer_sizes': (40, 30), 'alpha': 0.0001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5599539723200712 0.004026374893317962
+{'hidden_layer_sizes': (50, 25, 15), 'alpha': 0.0001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5634921811262525 0.002044143468225687
+{'hidden_layer_sizes': (70, 50, 25, 15), 'alpha': 0.0001, 'activation': 'relu', 'early_stopping': True, 'batch_size': 128} -0.5528622134547609 0.006501425573542778
+{'batch_size': 128, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.001, 'activation': 'logistic'} -0.5415016414423643 0.014956594390944435
+{'batch_size': 128, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.001, 'activation': 'logistic'} -0.534632481728653 0.009262488602410322
+{'batch_size': 256, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.001, 'activation': 'logistic'} -0.5532044794993388 0.006986109868196322
+{'batch_size': 256, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.001, 'activation': 'logistic'} -0.5488055968099448 0.01990680735786085
+{'batch_size': 128, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'logistic'} -0.5392802545313929 0.01618154124667251
+{'batch_size': 128, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'logistic'} -0.5351956779932443 0.007729301142333476
+{'batch_size': 256, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'logistic'} -0.5360083265248491 0.007717686198331061
+{'batch_size': 256, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'logistic'} -0.5468792928879054 0.0028198091038647943
+{'batch_size': 128, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.001, 'activation': 'relu'} -0.5565532209899069 0.015619204787558532
+{'batch_size': 128, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.001, 'activation': 'relu'} -0.5592896326942937 0.01510661245676259
+{'batch_size': 256, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.001, 'activation': 'relu'} -0.5619205806392846 0.012725055402867386
+{'batch_size': 256, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.001, 'activation': 'relu'} -0.5592494976366326 0.007667827697029797
+{'batch_size': 128, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'relu'} -0.5524783521249365 0.005915206433096504
+{'batch_size': 128, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'relu'} -0.5467222100412467 0.002674227302825652
+{'batch_size': 256, 'hidden_layer_sizes': (100, 50), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'relu'} -0.5700488978214542 0.018119946922167573
+{'batch_size': 256, 'hidden_layer_sizes': (90, 90), 'early_stopping': True, 'alpha': 0.0001, 'activation': 'relu'} -0.5616790401792054 0.02079322837484226
