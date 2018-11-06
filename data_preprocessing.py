@@ -8,7 +8,8 @@ from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, log_loss
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, TruncatedSVD
+from sklearn.manifold import TSNE
 from sklearn.feature_selection import RFE
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.svm import LinearSVC
@@ -133,7 +134,7 @@ if __name__ == "__main__":
         fit_model_and_print_results(clf, X_train, y_train, X_test, y_test, 'with ALL features')
 
         # PCA features
-        N_COMPONENTS = 30
+        N_COMPONENTS = 60
         # normalize features
         scaler = StandardScaler().fit(X_train)
         X_train_scaled = scaler.transform(X_train)
@@ -148,7 +149,33 @@ if __name__ == "__main__":
 
 
     ############################################################################
-    if True:
+    if False:
+
+        print("\n==================================================")
+        print("{:^50}".format("DIMENSIONNALITY REDUCTION BY TRUNCATED SVD"))
+        print("==================================================")
+
+        # All features
+        clf = BaseClf(**parameters)
+        fit_model_and_print_results(clf, X_train, y_train, X_test, y_test, 'with ALL features')
+
+        # PCA features
+        N_COMPONENTS = 92
+        # normalize features
+        # scaler = StandardScaler().fit(X_train)
+        # X_train_scaled = scaler.transform(X_train)
+        # X_test_scaled = scaler.transform(X_test)
+        # reduce dimensions
+        reducer = TruncatedSVD(n_components=N_COMPONENTS)
+        X_train_reduced = reducer.fit_transform(X_train)
+        X_test_reduced = reducer.transform(X_test)
+        # run model
+        clf = BaseClf(**parameters)
+        fit_model_and_print_results(clf, X_train_reduced, y_train, X_test_reduced, y_test, 'with {} TruncatedSVD features'.format(N_COMPONENTS))
+
+
+    ############################################################################
+    if False:
 
         print("\n==================================================")
         print("{:^50}".format("PREDICTIONS CALIBRATION"))
