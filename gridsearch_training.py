@@ -12,79 +12,82 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
+from sklearn.calibration import CalibratedClassifierCV
 
 from toolbox import load_otto_db
 
-N_CROSS_VAL = 4
-N_JOBS = 8
-CSV_DIR = 'gridsearch_results'
+N_CROSS_VAL = 3
+N_JOBS = 16
+CSV_DIR = 'gridsearch_results_new'
 
 if __name__ == "__main__":
 
     # Load data
     X, y = load_otto_db()
+    models = []
 
-    # Logistic Regression
-    parameters = {'penalty':['l1', 'l2'],
-                  'C':[0.1, 1., 10.],
-                  'n_jobs': [N_JOBS]}
-    models.append(("LogisticRegression", LogisticRegression(), parameters))
+    # # Logistic Regression
+    # parameters = {'penalty':['l1', 'l2'],
+    #               'C':[0.1, 1., 10.],
+    #               'multi_class':['auto']}
+    # models.append(("LogisticRegression", LogisticRegression(), parameters))
+    #
+    # # SVM
+    # parameters = {'kernel':['linear', 'rbf', 'poly', 'sigmoid'],
+    #               'C':[0.1, 1., 10., 100],
+    #               'probability':[True],
+    #               'gamma'=['scale']}
+    # models.append(("SVC", SVC(), parameters))
 
-    # SVM
-    parameters = {'kernel':['linear', 'rbf', 'poly', 'sigmoid'],
-                  'C':[0.1, 1., 10., 100],
-                  'probability':[True]}
-    models.append(("SVC", SVC(), parameters))
+    # # RandomForestClassifier
+    # parameters = {'n_estimators':[10, 50, 100, 150],
+    #               'criterion':['gini', 'entropy'],
+    #               'max_depth':[None, 5, 10, 20],
+    #               'min_samples_split':[2, 4],
+    #               'n_jobs': [1]}
+    # models.append(("RandomForest", RandomForestClassifier(), parameters))
+    #
+    # Multi-Layer Perceptron Classifier
+    parameters = {'hidden_layer_sizes':[(90,), (50,), (40, 30), (50, 25, 15), (70, 50, 25, 15)],
+                  'activation':['logistic', 'relu'],
+                  'batch_size':[128, 256],
+                  'alpha':[0.001, 0.0001],
+                  'early_stopping':[True]}
+    models.append(("MLPClassifier", MLPClassifier(), parameters))
+    #
+    # # DecisionTree
+    # parameters = {'splitter':['best', 'random'],
+    #               'criterion':['gini', 'entropy'],
+    #               'max_depth':[None, 10, 20, 50],
+    #               'min_samples_split':[2, 4, 6]}
+    # models.append(("DecisionTree", DecisionTreeClassifier(), parameters))
+
+    # # GradientBoostingClassifier
+    # parameters = {'loss':['deviance', 'exponential'],
+    #               'n_estimators':[50, 100, 200],
+    #               'criterion':['friedman_mse', 'mae'],
+    #               'max_depth':[3, 7],
+    #               'min_samples_split':[2, 4],
+    #               'subsample':[0.7, 1.]}
+    # models.append(("GradientBoostingClassifier", GradientBoostingClassifier(), parameters))
 
     # KNeighbors
-    parameters = {'n_neighbors':[3, 5, 7],
-                  'p':[1, 2],
-                  'n_jobs': [N_JOBS]}
-    models.append(("KNeighbors", KNeighborsClassifier(), parameters))
-
-    # DecisionTree
-    parameters = {'splitter':['best', 'random'],
-                  'criterion':['gini', 'entropy'],
-                  'max_depth':[None, 10, 20, 50],
-                  'min_samples_split':[2, 4, 6]}
-    models.append(("DecisionTree", DecisionTreeClassifier(), parameters))
-
-    # RandomForestClassifier
-    parameters = {'n_estimators':[10, 50, 100],
-                  'criterion':['gini', 'entropy'],
-                  'max_depth':[None, 5, 10],
-                  'min_samples_split':[2, 4],
-                  'n_jobs': [N_JOBS]}
-    models.append(("RandomForest", RandomForestClassifier(), parameters))
-
-    # GradientBoostingClassifier
-    parameters = {'loss':['deviance', 'exponential'],
-                  'n_estimators':[50, 100, 200],
-                  'criterion':['friedman_mse', 'mae'],
-                  'max_depth':[3, 7],
-                  'min_samples_split':[2, 4],
-                  'subsample':[0.7, 1.]}
-    models.append(("GradientBoostingClassifier", GradientBoostingClassifier(), parameters))
-
-    # Multi-Layer Perceptron Classifier
-    parameters = {'hidden_layer_sizes':[(50,), (40, 30), (50, 25, 15)],
-                  'activation':['logistic', 'relu'],
-                  'batch_size':[128],
-                  'alpha':[0.001, 0.0001],
-                  'early_stopping' = [True]}
-    models.append(("MLPClassifier", MLPClassifier(), parameters))
+    # parameters = {'n_neighbors':[3, 5, 7],
+    #               'p':[1, 2],
+    #               'n_jobs': [1]}
+    # models.append(("KNeighbors", KNeighborsClassifier(), parameters))
 
     # Extreme Gradient Boosting classifier
-    parameters = {'objective':['binary:logistic'],
-                  'subsample':[0.7, 1],
-                  'colsample_bytree':[0.7, 1],
-                  'learning_rate':[0.1],
-                  'max_depth':[5, 7, 9],
-                  'reg_alpha':[0,1],
-                  'reg_lambda':[0,1],
-                  'n_estimators':[100],
-                  'n_jobs': [N_JOBS]}
-    models.append(("XGBoost", XGBClassifier(), parameters))
+    # parameters = {'objective':['binary:logistic'],
+    #               'subsample':[0.7, 1],
+    #               'colsample_bytree':[0.8],
+    #               'learning_rate':[0.1],
+    #               'max_depth':[9],
+    #               'reg_alpha':[0,1],
+    #               'reg_lambda':[0,1],
+    #               'n_estimators':[100, 150],
+    #               'n_jobs': [-1]}
+    # models.append(("XGBoost", XGBClassifier(), parameters))
 
     results = []
     names = []
