@@ -54,12 +54,14 @@ def visualisation(X, y, manifold='pca', n_components=2, normalisation=True):
         if n_components == 2:
             ax.scatter(X_manifold[y == class_i, 0],
                        X_manifold[y == class_i, 1],
-                       label=str(class_i))
+                       label=str(class_i),
+                       alpha=0.25)
         elif n_components == 3:
             ax.scatter(X_manifold[y_train == class_i, 0],
                        X_manifold[y_train == class_i, 1],
                        X_manifold[y_train == class_i, 2],
-                       label=str(class_i))
+                       label=str(class_i),
+                       alpha=0.25)
 
     plt.legend()
     plt.title('{} in {} dimensions'.format(manifold, n_components))
@@ -120,11 +122,11 @@ if __name__ == '__main__':
     print("Loading dataset...")
     X, y = load_otto_db()
 
-    print('WARNING: reducing numbers of samples to relieve RAM')
-    perm = np.arange(X.shape[0])
-    np.random.shuffle(perm)
-    X, y = X[perm, :], y[perm]
-    X, y = X[:1000, :], y[:1000] # You can remove thoses lines if you have a better computer
+    # print('WARNING: reducing numbers of samples to relieve RAM')
+    # pe   rm = np.arange(X.shape[0])
+    # np.random.shuffle(perm)
+    # X, y = X[perm, :], y[perm]
+    # X, y = X[:1000, :], y[:1000] # You can remove thoses lines if you have a better computer
 
     # separate training and validation sets
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)

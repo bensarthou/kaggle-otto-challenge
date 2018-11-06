@@ -120,18 +120,6 @@ def model_mix(X_train, y_train, X_val, y_val, models):
                    constraints=constraint)
     optimal_weights = res['x']
 
-    # print results
-    print("Ensamble learning results :")
-    print(" * Best Weights           : {}".format(optimal_weights))
-    print(" * Initial ensemble Score : {}".format(log_loss_func(init_weights)))
-    print(" * Final ensemble Score   : {}".format(res['fun']))
-
-    y_val_pred_p = model_mix_predict(X_val, models, optimal_weights, n_classes)
-    y_val_pred = np.argmax(y_val_pred_p, axis=1) + 1
-
-    print(" * Accuracy on validation set with ensemble learning : {:.4f}".format(accuracy_score(y_val, y_val_pred)))
-    print("{}".format(confusion_matrix(y_val, y_val_pred)))
-
     return models, optimal_weights
 
 
@@ -211,8 +199,8 @@ if __name__ == '__main__':
 
     parameters = {'objective': 'binary:logistic',
                   'n_estimators': 150,
-                  'max_depth': 9,
-                  'learning_rate': 0.1,
+                  'max_depth': 7,
+                  'learning_rate': 0.2,
                   'subsample': 0.7,
                   'colsample_bytree': 0.8,
                   'reg_lambda': 1,
@@ -241,7 +229,7 @@ if __name__ == '__main__':
                   'batch_size': 128}
     models.append(('MLP Classifier 1', MLPClassifier(**parameters)))
 
-    parameters = {'hidden_layer_sizes': (120,),
+    parameters = {'hidden_layer_sizes': (50,),
                   'activation': 'logistic',
                   'alpha': 0.001,
                   'early_stopping': True,
@@ -254,7 +242,20 @@ if __name__ == '__main__':
 
 
     print('\nMODEL MIX, ALL FEATURES\n')
+    # train model mix
     trained_models, optimal_weights = model_mix(X_train, y_train, X_val, y_val, models)
+    # get results
+    y_val_pred_p = model_mix_predict(X_val, trained_models, optimal_weights, n_classes)
+    y_val_pred = np.argmax(y_val_pred_p, axis=1) + 1
+    conf_mat = confusion_matrix(y_val, y_val_pred)
+    conf_mat_norm = conf_mat.astype('float') / conf_mat.sum(axis=1)[:, np.newaxis]
+    # print results
+    print("\nEnsamble learning results on validation set :")
+    print(" * Best Weights : {}".format(np.round(optimal_weights, 4)))
+    print(" * Log-loss     : {:.4f}".format(log_loss(y_val, y_val_pred_p)))
+    print(" * Accuracy     : {:.4f}".format(accuracy_score(y_val, y_val_pred)))
+    print("Confusion matrix: \n{}".format(conf_mat))
+    print("Normalized confusion matrix: \n{}".format(np.round(conf_mat_norm, 2)))
 
     # print('\nMODEL MIX, BEST FEATURES\n')
     # model_mix(X_train[:, indices_best_features], y_train,
