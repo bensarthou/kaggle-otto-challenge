@@ -4,13 +4,15 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split
 
 from toolbox import load_otto_db
 
 
-def visualisation(X, y, manifold='pca', n_components=2):
+def visualisation(X, y, manifold='pca', n_components=2, normalisation=True):
     """
     @brief: Visualize features of data manifolded in 2 or 3 dimensions, with PCA or TSNE
 
@@ -23,10 +25,19 @@ def visualisation(X, y, manifold='pca', n_components=2):
 
     print('Training Manifold...')
 
+    transformers = []
+
+    if normalisation:
+        transformers = [('scaling', StandardScaler())]
+
     if manifold == 'tsne':
-        X_manifold = TSNE(n_components=n_components, verbose=10).fit_transform(X)
+        transformers.append(('tsne', TSNE(n_components=n_components, verbose=10)))
+        pipeline = Pipeline(transformers)
     elif manifold == 'pca':
-        X_manifold = PCA(n_components=n_components).fit_transform(X)
+        transformers.append(('pca', PCA(n_components=n_components)))
+        pipeline = Pipeline(transformers)
+
+    X_manifold = pipeline.fit_transform(X)
 
     print('End training')
 
@@ -51,6 +62,7 @@ def visualisation(X, y, manifold='pca', n_components=2):
                        label=str(class_i))
 
     plt.legend()
+    plt.title('{} in {} dimensions'.format(manifold, n_components))
 
     return X_manifold
 
@@ -107,8 +119,12 @@ if __name__ == '__main__':
     print('-------------------------------------------------------')
     print("Loading dataset...")
     X, y = load_otto_db()
-    # print('WARNING: reducing numbers of samples to relieve RAM')
-    # X, y = X[:10000, :], y[:10000] # You can remove this line if you have a better computer
+
+    print('WARNING: reducing numbers of samples to relieve RAM')
+    perm = np.arange(X.shape[0])
+    np.random.shuffle(perm)
+    X, y = X[perm, :], y[perm]
+    X, y = X[:1000, :], y[:1000] # You can remove thoses lines if you have a better computer
 
     # separate training and validation sets
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -154,7 +170,8 @@ if __name__ == '__main__':
 
     print('-------------------------------------------------------')
     print('VISUALISATION OF DATA BY PROJECTING IN SMALL DIMENSIONS')
-    # You can choose you projection method (PCA or T-SNE) and the number of reduced dimension (2 or 3)
-    visualisation(X_train, y_train, manifold='pca', n_components=3)
+    # You can choose you projection method (PCA or T-SNE)
+    ## and the number of reduced dimension (2 or 3)
+    visualisation(X_train, y_train, manifold='tsne', n_components=2)
 
     plt.show()
