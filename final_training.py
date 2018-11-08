@@ -11,7 +11,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, accuracy_score, log_loss, mean_squared_error
+from sklearn.metrics import confusion_matrix, accuracy_score, log_loss
 from xgboost import XGBClassifier
 
 from toolbox import load_otto_db
@@ -24,7 +24,7 @@ GRIDSEARCH_DIR = 'gridsearch_results'
 
 N_JOBS = -1
 LIMITED_RAM = False
-OUTPUT_DIR = 'data'
+SUBMISSION_FILE = 'data/prediction_results.csv'
 
 
 def compare_model(dir, models):
@@ -39,23 +39,27 @@ def compare_model(dir, models):
         model_name = model.split('.')[0]
         best_params, best_mean_logloss, best_std_logloss = {}, -10000, 1
 
-        with open('{}/{}.csv'.format(dir, model)) as csvfile:
-            reader = csv.reader(csvfile, delimiter=' ')
+        try:
+            with open('{}/{}.csv'.format(dir, model)) as csvfile:
+                reader = csv.reader(csvfile, delimiter=' ')
 
-            for row in reader:
-                params = ' '.join(row[:-2])
-                mean_logloss = float(row[-2])
-                std_logloss = float(row[-1])
+                for row in reader:
+                    params = ' '.join(row[:-2])
+                    mean_logloss = float(row[-2])
+                    std_logloss = float(row[-1])
 
-                if mean_logloss + std_logloss > best_mean_logloss + best_std_logloss:
-                    best_mean_logloss = mean_logloss
-                    best_std_logloss = std_logloss
-                    best_params = params
+                    if mean_logloss + std_logloss > best_mean_logloss + best_std_logloss:
+                        best_mean_logloss = mean_logloss
+                        best_std_logloss = std_logloss
+                        best_params = params
 
-        print('Model: {} => neg_log_loss: {}, std: {}, params: {}\n'.format(model_name,
-                                                                            best_mean_logloss,
-                                                                            best_std_logloss,
-                                                                            best_params))
+            print('Model: {} => neg_log_loss: {}, std: {}, params: {}\n'.format(model_name,
+                                                                                best_mean_logloss,
+                                                                                best_std_logloss,
+                                                                                best_params))
+
+        except FileNotFoundError:
+            print("Model '{}' not found in '{}' directory.\n".format(model_name, GRIDSEARCH_DIR))
 
 
 def model_mix(X_train, y_train, X_val, y_val, models):
@@ -101,9 +105,8 @@ def model_mix(X_train, y_train, X_val, y_val, models):
     #  Find ensemble learning weights
     # --------------------------------
 
-    # We want to minimize the logloss
+    # We want to minimize the logloss of the global prediction
     def log_loss_func(weights):
-        ''' scipy minimize will pass the weights as a numpy array '''
         final_prediction = 0
         for weight, prediction in zip(weights, y_proba_pred):
             final_prediction += weight * prediction
@@ -111,13 +114,11 @@ def model_mix(X_train, y_train, X_val, y_val, models):
 
     # Uniform initialisation
     init_weights = np.ones((len(y_proba_pred),)) / len(y_proba_pred)
-    # init_weights = np.array([0.5, 0.4, 0.1])
-    # We want to have the weight at 1
+    # Weights are in range [0; 1] and must sum to 1
     constraint = ({'type': 'eq', 'fun': lambda w: 1 - sum(w)})
     bounds = [(0, 1)] * len(y_proba_pred)
-    # Compute best weights (method chosen with the advive of Kaggle kernel)
-    res = minimize(log_loss_func, init_weights, method='SLSQP', bounds=bounds,
-                   constraints=constraint)
+    # Compute best weights (method chosen with the advice of Kaggle kernel)
+    res = minimize(log_loss_func, init_weights, method='SLSQP', bounds=bounds, constraints=constraint)
     optimal_weights = res['x']
 
     return models, optimal_weights
@@ -208,6 +209,17 @@ if __name__ == '__main__':
                   'n_jobs': N_JOBS}
     models.append(('XGBoost 2', XGBClassifier(**parameters)))
 
+    parameters = {'objective': 'binary:logistic',
+                  'n_estimators': 200,
+                  'max_depth': 6,
+                  'learning_rate': 0.3,
+                  'subsample': 0.7,
+                  'colsample_bytree': 0.8,
+                  'reg_lambda': 1,
+                  'reg_alpha': 1,
+                  'n_jobs': N_JOBS}
+    models.append(('XGBoost 3', XGBClassifier(**parameters)))
+
     parameters = {'criterion': 'gini',
                   'n_estimators': 150,
                   'max_depth': None,
@@ -222,6 +234,13 @@ if __name__ == '__main__':
                   'n_jobs': N_JOBS}
     models.append(('Random Forest 2', RandomForestClassifier(**parameters)))
 
+    parameters = {'criterion': 'gini',
+                  'n_estimators': 250,
+                  'max_depth': None,
+                  'min_samples_split': 3,
+                  'n_jobs': N_JOBS}
+    models.append(('Random Forest 3', RandomForestClassifier(**parameters)))
+
     parameters = {'hidden_layer_sizes': (90,),
                   'activation': 'logistic',
                   'alpha': 0.001,
@@ -235,11 +254,6 @@ if __name__ == '__main__':
                   'early_stopping': True,
                   'batch_size': 128}
     models.append(('MLP Classifier 2', MLPClassifier(**parameters)))
-
-    parameters = {'C': 10.0,
-                  'penalty': 'l2'}
-    models.append(('Logistic Regression', LogisticRegression(**parameters)))
-
 
     print('\nMODEL MIX, ALL FEATURES\n')
     # train model mix
@@ -268,11 +282,11 @@ if __name__ == '__main__':
     print("Running final predictions on test set...")
     y_test_pred = model_mix_predict(X_test, trained_models, optimal_weights, n_classes)
 
-    print("Saving predictions to .csv file respecting kaggle submission format...")
+    print("Saving predictions to '{}' file respecting kaggle submission format...".format(SUBMISSION_FILE))
     preds = pd.DataFrame(y_test_pred)
     namesRow = ["Class_1", "Class_2", "Class_3", "Class_4", "Class_5", "Class_6",
                 "Class_7", "Class_8", "Class_9"]
     preds.columns = namesRow
     preds.head()
     preds.index += 1
-    preds.to_csv(OUTPUT_DIR + "/results_model_mix.csv", encoding='utf-8', index=True, index_label="id")
+    preds.to_csv(SUBMISSION_FILE, encoding='utf-8', index=True, index_label="id")
