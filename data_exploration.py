@@ -114,6 +114,30 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
     else:
         return indices_best_features
 
+def compute_sparsity(X, y):
+    """
+    @brief: Plot the data class by class to see its repartition and the sparsity
+
+    @params:
+        X: ndarray, (n_samples, n_features), data for training
+        y: ndarray, (n_samples, ), labels for the samples
+
+    @return:
+    """
+
+    classes = np.unique(y)
+
+    for i_class in classes:
+
+        ax = plt.subplot(3, 3, i_class)
+        X_view = X[y == i_class, :]
+        X_view[X_view > 5] = 5 #binarize the data
+
+        ax.imshow(X_view, cmap='Reds', aspect='auto')
+        ax.set_title('Class {}, {} samples'.format(i_class, np.shape(X[y == i_class, :])[0]))
+        ax.set_yticklabels([])
+
+    plt.tight_layout()
 
 if __name__ == '__main__':
 
@@ -122,6 +146,7 @@ if __name__ == '__main__':
     print("Loading dataset...")
     X, y = load_otto_db()
 
+    compute_sparsity(X, y)
     # print('WARNING: reducing numbers of samples to relieve RAM')
     # pe   rm = np.arange(X.shape[0])
     # np.random.shuffle(perm)
