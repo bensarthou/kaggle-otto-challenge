@@ -12,6 +12,9 @@ from sklearn.model_selection import train_test_split
 from toolbox import load_otto_db
 
 
+LIMITED_RAM = False
+
+
 def visualisation(X, y, manifold='pca', n_components=2, normalisation=True):
     """
     @brief: Visualize features of data manifolded in 2 or 3 dimensions, with PCA or TSNE
@@ -114,6 +117,7 @@ def feature_importance(X, y, threshold=0.01, return_model=False):
     else:
         return indices_best_features
 
+
 def compute_sparsity(X, y):
     """
     @brief: Plot the data class by class to see its repartition and the sparsity
@@ -131,13 +135,14 @@ def compute_sparsity(X, y):
 
         ax = plt.subplot(3, 3, i_class)
         X_view = X[y == i_class, :]
-        X_view[X_view > 5] = 5 #binarize the data
+        X_view[X_view > 5] = 5 #threshold and binarize the data
 
         ax.imshow(X_view, cmap='Reds', aspect='auto')
         ax.set_title('Class {}, {} samples'.format(i_class, np.shape(X[y == i_class, :])[0]))
         ax.set_yticklabels([])
 
     plt.tight_layout()
+
 
 if __name__ == '__main__':
 
@@ -146,21 +151,28 @@ if __name__ == '__main__':
     print("Loading dataset...")
     X, y = load_otto_db()
 
+    ######################################
+    ####### Sparsity of dataset ##########
+    ######################################
     compute_sparsity(X, y)
-    # print('WARNING: reducing numbers of samples to relieve RAM')
-    # pe   rm = np.arange(X.shape[0])
-    # np.random.shuffle(perm)
-    # X, y = X[perm, :], y[perm]
-    # X, y = X[:1000, :], y[:1000] # You can remove thoses lines if you have a better computer
+
+    # reduce dataset size for RAM issue
+    if LIMITED_RAM:
+        print('WARNING: reducing numbers of samples to relieve RAM')
+        perm = np.arange(X.shape[0])
+        np.random.shuffle(perm)
+        X, y = X[perm, :], y[perm]
+        X, y = X[:1000, :], y[:1000] # You can remove those lines if you have a better computer
 
     # separate training and validation sets
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.1, random_state=42)
+
 
     ###############################################
     ####### Correlation between features ##########
     ###############################################
 
-    ## Look for correlation between the features to see if there is redondancy in the data or not
+    # Look for correlation between the features to see if there is redundancy in the data or not
 
     corr_matrix = np.corrcoef(X, rowvar=False)
     plt.matshow(corr_matrix, cmap='seismic')
@@ -172,7 +184,7 @@ if __name__ == '__main__':
     #####################################
 
     # The idea of this section is to reduce the features used for learning, by selecting only
-    ## those who seems to help in the classification (in a attempt to reduce noise)
+    # those who seems to help in the classification (in a attempt to reduce noise)
 
     print('-------------------------------------------------------')
     print("Computing Features importance...")
@@ -193,12 +205,12 @@ if __name__ == '__main__':
     #####################################
 
     # With a difficult problem, visualising the data can be useful to determine which solutions
-    ## can be best, but the issue is to reduce the dimensions of the data to a human-readable size
+    # can be best, but the issue is to reduce the dimensions of the data to a human-readable size
 
     print('-------------------------------------------------------')
     print('VISUALISATION OF DATA BY PROJECTING IN SMALL DIMENSIONS')
-    # You can choose you projection method (PCA or T-SNE)
-    ## and the number of reduced dimension (2 or 3)
+    # You can choose your projection method (PCA or T-SNE)
+    # and the number of reduced dimension (2 or 3)
     visualisation(X_train, y_train, manifold='tsne', n_components=2)
 
     plt.show()
